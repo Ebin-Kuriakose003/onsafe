@@ -1,0 +1,68 @@
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role_id INT NOT NULL,
+    status TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_users_role
+        FOREIGN KEY (role_id)
+        REFERENCES roles(id)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE roles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB;
+
+CREATE TABLE posts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    owner INT NOT NULL,
+    status VARCHAR(50) DEFAULT 'draft',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_posts_owner
+        FOREIGN KEY (owner)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE post_assignments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    post_id INT NOT NULL,
+    assigned_by INT NOT NULL,
+    editor_id INT NOT NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_assign_post
+        FOREIGN KEY (post_id) REFERENCES posts(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_assign_by
+        FOREIGN KEY (assigned_by) REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_assign_editor
+        FOREIGN KEY (editor_id) REFERENCES users(id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE post_permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    assign_id INT NOT NULL,
+    can_edit TINYINT(1) DEFAULT 0,
+    can_delete TINYINT(1) DEFAULT 0,
+
+    CONSTRAINT fk_permission_assign
+        FOREIGN KEY (assign_id)
+        REFERENCES post_assignments(id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB;
+
