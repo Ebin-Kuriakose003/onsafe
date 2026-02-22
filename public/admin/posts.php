@@ -53,6 +53,7 @@
                         <td>
                              <button onclick="editPost(${post.id}, '${post.title}', \`${post.content}\`)">Edit</button>
                              <button onclick="openAssignModal(${post.id})">Assign</button>
+                             <button onclick="manageAssignments(${post.id})">Edit Assign</button>
                              <button onclick="changeStatus(${post.id}, 'active')">Activate</button>
                              <button onclick="changeStatus(${post.id}, 'inactive')">Deactivate</button>
                              <button onclick="deletePost(${post.id})">Delete</button>
@@ -173,6 +174,117 @@
                 });
         }
 
+        function manageAssignments(postId) {
+
+            $.get('../../app/post/get_assignments.php', {
+                    post_id: postId
+                },
+                function(response) {
+
+                    let res = JSON.parse(response);
+
+                    if (res.status === 'success') {
+
+                        let content = '';
+
+                        if (res.data.length === 0) {
+                            content = "<p>No Assignments</p>";
+                        }
+
+                        res.data.forEach(function(assign) {
+
+                            content += `
+                    <div style="border:1px solid #ccc;padding:8px;margin-bottom:5px;">
+                        <b>Editor:</b> ${assign.editor_name}<br>
+
+                        <label>
+                            <input type="checkbox"
+                                   ${assign.can_edit == 1 ? 'checked' : ''}
+                                   onchange="updatePermission(${assign.assign_id}, this.checked, 'edit')">
+                            Edit
+                        </label>
+
+                        <label>
+                            <input type="checkbox"
+                                   ${assign.can_delete == 1 ? 'checked' : ''}
+                                   onchange="updatePermission(${assign.assign_id}, this.checked, 'delete')">
+                            Delete
+                        </label>
+
+                        <br><br>
+                        <button onclick="removeAssignment(${assign.assign_id})">
+                            Remove Assignment
+                        </button>
+                    </div>
+                    `;
+                        });
+
+                        Swal.fire({
+                            title: 'Manage Assignments',
+                            html: content,
+                            width: 600,
+                            showConfirmButton: false
+                        });
+                    }
+                });
+        }
+function removeAssignment(assignId){
+
+    Swal.fire({
+        title: 'Remove Assignment?',
+        icon: 'warning',
+        showCancelButton: true
+    }).then((result)=>{
+
+        if(result.isConfirmed){
+
+            $.post('../../app/post/remove_editor.php',
+                {assign_id: assignId},
+                function(response){
+
+                    let res = JSON.parse(response);
+
+                    Swal.fire({
+                        icon: res.status,
+                        title: res.msg
+                    }).then(()=>{
+                        location.reload();
+                    });
+                });
+        }
+    });
+}
+function updatePermission(assignId, checked, type){
+
+    let canEdit = 0;
+    let canDelete = 0;
+
+    if(type === 'edit'){
+        canEdit = checked ? 1 : 0;
+    }
+
+    if(type === 'delete'){
+        canDelete = checked ? 1 : 0;
+    }
+
+    $.post('../../app/post/update_permission.php',
+        {
+            assign_id: assignId,
+            permission_type: type,
+            value: checked ? 1 : 0
+        },
+        function(response){
+
+            let res = JSON.parse(response);
+
+            Swal.fire({
+                icon: res.status,
+                title: res.msg,
+                timer: 1000,
+                showConfirmButton: false
+            });
+        });
+}
         function deletePost(id) {
 
             Swal.fire({

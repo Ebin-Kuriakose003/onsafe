@@ -87,6 +87,7 @@
                         <td>
                              <button onclick="editPost(${post.id}, '${post.title}', \`${post.content}\`)">Edit</button>
                              <button onclick="openAssignModal(${post.id})">Assign</button>
+                            <button onclick="manageAssignments(${post.id})">Edit Assign</button>
                              <button onclick="changeStatus(${post.id}, 'active')">Activate</button>
                              <button onclick="changeStatus(${post.id}, 'inactive')">Deactivate</button>
                              <button onclick="deletePost(${post.id})">Delete</button>
@@ -236,6 +237,106 @@
                 }
             });
         }
+        function manageAssignments(postId){
+
+    $.ajax({
+        url: '../../app/post/get_assignments.php',
+        type: 'GET',
+        data: {post_id: postId},
+        dataType: 'json',   // 🔥 Important
+        success: function(res){
+
+            console.log("Assignment Data:", res);
+
+            if(res.status === 'success'){
+
+                let content = '';
+
+                if(res.data.length === 0){
+                    content = "<p>No Assignments</p>";
+                }
+
+                res.data.forEach(function(assign){
+
+                    content += `
+                        <div style="border:1px solid #ccc;padding:10px;margin-bottom:8px;">
+                            <b>Editor:</b> ${assign.editor_name} <br>
+                            <b>Edit:</b> ${assign.can_edit == 1 ? 'Yes' : 'No'} <br>
+                            <b>Delete:</b> ${assign.can_delete == 1 ? 'Yes' : 'No'}
+                        </div>
+                    `;
+                });
+
+                Swal.fire({
+                    title: 'Manage Assignments',
+                    html: content,
+                    width: 600,
+                    showConfirmButton: true
+                });
+            }
+        },
+        error: function(xhr){
+            console.log("Error:", xhr.responseText);
+        }
+    });
+}
+function removeAssignment(assignId){
+
+    Swal.fire({
+        title: 'Remove Assignment?',
+        icon: 'warning',
+        showCancelButton: true
+    }).then((result)=>{
+
+        if(result.isConfirmed){
+
+            $.post('../../app/post/remove_editor.php',
+                {assign_id: assignId},
+                function(response){
+
+                    let res = JSON.parse(response);
+
+                    Swal.fire({
+                        icon: res.status,
+                        title: res.msg
+                    }).then(()=>{
+                        location.reload();
+                    });
+                });
+        }
+    });
+}
+function updatePermission(assignId, checked, type){
+
+    let canEdit = 0;
+    let canDelete = 0;
+
+    if(type === 'edit'){
+        canEdit = checked ? 1 : 0;
+    }
+
+    if(type === 'delete'){
+        canDelete = checked ? 1 : 0;
+    }
+
+    $.post('../../app/post/update_permission.php',
+        {
+            assign_id: assignId,
+            permission_type: type,
+            value: checked ? 1 : 0
+        },
+        function(response){
+
+            let res = JSON.parse(response);
+
+            Swal.fire({
+                icon: res.status,
+                title: res.msg,
+                timer: 1000,
+                showConfirmButton: false
+            });
+        });
+}
     </script>
 
 </body>
